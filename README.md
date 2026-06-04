@@ -1,4 +1,5 @@
 <div align="center">
+<img width="1920" height="944" alt="image" src="https://github.com/user-attachments/assets/50cc0074-4a58-4321-8590-ece23a04898c" />
 
 <img src="public/logo.svg" alt="Ajax Manager" width="80" />
 
