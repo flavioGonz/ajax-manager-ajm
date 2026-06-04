@@ -1,0 +1,228 @@
+// Prisma schema - Ajax Manager AJM
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =====================================================
+//  USERS & AUTH
+// =====================================================
+
+enum UserRole {
+  ADMIN     // gestiona usuarios, webhooks, todo
+  OPERATOR  // ve eventos, gestiona webhooks, no usuarios
+  VIEWER    // solo lectura de eventos y webhooks
+}
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  fullName     String?  @map("full_name")
+  role         UserRole @default(VIEWER)
+  active       Boolean  @default(true)
+  lastLoginAt  DateTime? @map("last_login_at")
+
+  auditLogs AuditLog[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  pushSubscriptions PushSubscription[]
+  clientAccess     UserClientAccess[]
+
+  @@map("users")
+}
+
+// Cada accion mutante (crear/editar/borrar webhook, login, cambio pass, etc)
+model AuditLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String?  @map("user_id") @db.Uuid
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action    String   // ej: "user.login", "subscription.create", "subscription.delete"
+  resource  String?  // ej: id del webhook afectado
+  metadata  Json?
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+// =====================================================
+//  EVENTOS Y WEBHOOKS
+// =====================================================
+
+model AjaxEvent {
+  id             String      @id @default(uuid()) @db.Uuid
+  sqsMessageId   String      @unique @map("sqs_message_id")
+  messageGroupId String?     @map("message_group_id")
+  ajaxEventId    String?     @map("ajax_event_id")
+  hubId          String?     @map("hub_id")
+  eventCode      String?     @map("event_code")
+  protocol       String?
+  description    String?
+  severity       String?
+  occurredAt     DateTime?   @map("occurred_at")
+  receivedAt     DateTime    @default(now()) @map("received_at")
+  rawPayload     Json        @map("raw_payload")
+  status         EventStatus @default(RECEIVED)
+  errorMessage   String?     @map("error_message")
+  processedAt    DateTime?   @map("processed_at")
+
+  deliveries WebhookDelivery[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([hubId])
+  @@index([severity])
+  @@index([occurredAt])
+  @@index([status])
+  @@map("ajax_events")
+}
+
+enum EventStatus {
+  RECEIVED
+  PROCESSED
+  DISPATCHED
+  FAILED
+}
+
+enum NotificationChannelType {
+  HTTP
+  EMAIL
+  SLACK
+  TELEGRAM
+  SCADA_OPC
+}
+
+model WebhookSubscription {
+  id           String                  @id @default(uuid()) @db.Uuid
+  name         String
+  type         NotificationChannelType @default(HTTP)
+  url          String?                 // Para HTTP/SLACK: URL. Para EMAIL/TELEGRAM/SCADA_OPC: NULL (info en config)
+  secret       String?
+  filters      Json?
+  active       Boolean                 @default(true)
+  extraHeaders Json?                   @map("extra_headers")
+  config       Json?                   // Config especifica por tipo: emailTo, smtpHost, slackChannel, tgBotToken, tgChatId, opcServerUrl, etc
+
+  deliveries WebhookDelivery[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("webhook_subscriptions")
+}
+
+model WebhookDelivery {
+  id             String         @id @default(uuid()) @db.Uuid
+  eventId        String         @map("event_id") @db.Uuid
+  subscriptionId String         @map("subscription_id") @db.Uuid
+  attempt        Int            @default(1)
+  status         DeliveryStatus @default(PENDING)
+  httpStatus     Int?           @map("http_status")
+  responseBody   String?        @map("response_body") @db.Text
+  errorMessage   String?        @map("error_message")
+  startedAt      DateTime?      @map("started_at")
+  completedAt    DateTime?      @map("completed_at")
+
+  event        AjaxEvent           @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  subscription WebhookSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([eventId])
+  @@index([subscriptionId])
+  @@index([status])
+  @@map("webhook_deliveries")
+}
+
+enum DeliveryStatus {
+  PENDING
+  IN_PROGRESS
+  SUCCEEDED
+  FAILED
+  DEAD_LETTER
+}
+
+model PushSubscription {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String?  @map("user_id") @db.Uuid
+  endpoint    String   @unique @db.Text
+  p256dh      String   @db.Text
+  auth        String   @db.Text
+  userAgent   String?  @map("user_agent") @db.Text
+  // Filtros: severidades a notificar; null = todas
+  severities  String[] @default([])
+  active      Boolean  @default(true)
+  failures    Int      @default(0)
+  lastFailure DateTime? @map("last_failure")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([active])
+  @@map("push_subscriptions")
+}
+
+model ManagedClient {
+  id                 String        @id @default(uuid()) @db.Uuid
+  name               String        @db.Text
+  registrationNumber String?       @map("registration_number")
+  monitored          Boolean       @default(false)
+  responseCompany    String?       @map("response_company")
+  email              String?
+  phone              String?
+  address            String?       @db.Text
+  notes              String?       @db.Text
+  createdAt          DateTime      @default(now()) @map("created_at")
+  updatedAt          DateTime      @updatedAt @map("updated_at")
+
+  hubLinks           HubClientLink[]
+  userAccess         UserClientAccess[]
+
+  @@index([monitored])
+  @@index([registrationNumber])
+  @@map("managed_clients")
+}
+
+model HubClientLink {
+  id        String         @id @default(uuid()) @db.Uuid
+  hubId     String         @unique @map("hub_id")
+  clientId  String         @map("client_id") @db.Uuid
+  notes     String?        @db.Text
+  createdAt DateTime       @default(now()) @map("created_at")
+  updatedAt DateTime       @updatedAt @map("updated_at")
+  client    ManagedClient  @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId])
+  @@map("hub_client_links")
+}
+
+model UserClientAccess {
+  id        String        @id @default(uuid()) @db.Uuid
+  userId    String        @map("user_id") @db.Uuid
+  clientId  String        @map("client_id") @db.Uuid
+  createdAt DateTime      @default(now()) @map("created_at")
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  client    ManagedClient @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, clientId])
+  @@index([userId])
+  @@index([clientId])
+  @@map("user_client_access")
+}
+

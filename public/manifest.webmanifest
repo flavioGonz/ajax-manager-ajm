@@ -1,0 +1,31 @@
+{
+  "name": "Ajax Manager AJM",
+  "short_name": "AJM",
+  "description": "Panel de monitoreo Ajax Systems Enterprise · IES Uruguay",
+  "id": "/dashboard/",
+  "start_url": "/dashboard/",
+  "scope": "/dashboard/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "orientation": "any",
+  "theme_color": "#0b0d10",
+  "background_color": "#0b0d10",
+  "lang": "es-UY",
+  "dir": "ltr",
+  "categories": ["productivity", "security", "business"],
+  "icons": [
+    { "src": "icons/icon-192.png",     "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png",     "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-192-mask.png","sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/icon-512-mask.png","sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "logo.svg",               "sizes": "any",     "type": "image/svg+xml", "purpose": "any" }
+  ],
+  "shortcuts": [
+    { "name": "Inicio",   "url": "/dashboard/#/home",    "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Alarmas",  "url": "/dashboard/#/alarms",  "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Eventos",  "url": "/dashboard/#/events",  "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Clientes", "url": "/dashboard/#/clients", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] }
+  ],
+  "screenshots": [],
+  "prefer_related_applications": false
+}

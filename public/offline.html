@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<meta name="theme-color" content="#0b0d10"/>
+<title>Sin conexion — Ajax Manager AJM</title>
+<link rel="icon" type="image/svg+xml" href="logo.svg"/>
+<style>
+* { box-sizing: border-box; }
+html, body { margin:0; padding:0; height:100%; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+body {
+  background:
+    radial-gradient(60% 50% at 50% 20%, rgba(225,29,42,.20), transparent 60%),
+    radial-gradient(40% 35% at 50% 80%, rgba(124,13,24,.16), transparent 60%),
+    #0b0d10;
+  color: #e5e7eb;
+  display: flex; align-items: center; justify-content: center;
+  min-height: 100vh; padding: env(safe-area-inset-top) 1.5rem env(safe-area-inset-bottom);
+  overflow: hidden;
+}
+.wrap {
+  max-width: 420px; width: 100%; text-align: center;
+  background: rgba(20, 22, 28, 0.55);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+          backdrop-filter: saturate(180%) blur(20px);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 20px; padding: 2.5rem 1.75rem;
+  box-shadow: 0 12px 48px rgba(0,0,0,.5);
+  animation: rise .5s cubic-bezier(.4,0,.2,1);
+}
+@keyframes rise { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.icon-circle {
+  width: 84px; height: 84px; border-radius: 50%;
+  background: rgba(225,29,42,.10); border: 1px solid rgba(225,29,42,.30);
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 1.25rem;
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(225,29,42,.4); }
+  50%     { box-shadow: 0 0 0 12px rgba(225,29,42,0); }
+}
+.icon-circle svg { width: 40px; height: 40px; color: #fca5a5; }
+h1 { font-size: 1.4rem; margin: 0 0 .5rem; font-weight: 600; color: #fff; }
+.sub { color: rgba(229,231,235,.7); font-size: .9rem; line-height: 1.5; margin: 0 0 1.5rem; }
+.btn {
+  display: inline-flex; align-items: center; gap: .5rem;
+  background: #e11d2a; color: white; border: none;
+  padding: .7rem 1.4rem; border-radius: 10px; font-size: .9rem; font-weight: 600;
+  cursor: pointer; transition: transform .15s, box-shadow .15s;
+  text-decoration: none;
+}
+.btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(225,29,42,.4); }
+.status-pill {
+  display: inline-flex; align-items: center; gap: .4rem;
+  background: rgba(251,191,36,.1); border: 1px solid rgba(251,191,36,.3);
+  color: #fbbf24; padding: 4px 10px; border-radius: 99px;
+  font-size: .7rem; font-weight: 600; margin-bottom: 1.25rem;
+}
+.status-pill.online { background: rgba(134,239,172,.1); border-color: rgba(134,239,172,.3); color: #86efac; }
+.status-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; animation: pulse-dot 1.5s ease-in-out infinite; }
+@keyframes pulse-dot { 0%,100% { opacity:1; } 50% { opacity:.4; } }
+.cached-note { margin-top: 1rem; font-size: .72rem; color: rgba(229,231,235,.5); }
+.cached-note a { color: #93c5fd; text-decoration: none; }
+.brand { margin-top: 1.5rem; opacity: .5; font-size: .72rem; }
+.brand img { width: 16px; height: 16px; vertical-align: -3px; margin-right: 4px; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="icon-circle">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="2" y1="2" x2="22" y2="22"/>
+        <path d="M8.5 16.5a5 5 0 0 1 7 0"/>
+        <path d="M2 8.82a15 15 0 0 1 4.17-2.65"/>
+        <path d="M10.66 5c4.01-.36 8.14.9 11.34 3.76"/>
+        <path d="M16.85 11.25a10 10 0 0 1 2.22 1.68"/>
+        <path d="M5 13a10 10 0 0 1 5.17-2.69"/>
+        <line x1="12" y1="20" x2="12.01" y2="20"/>
+      </svg>
+    </div>
+
+    <span class="status-pill" id="statusPill">
+      <span class="dot"></span>
+      <span id="statusText">Sin conexion</span>
+    </span>
+
+    <h1>No hay conexion a internet</h1>
+    <p class="sub">Ajax Manager necesita conexion para mostrar eventos en tiempo real. Vamos a reintentar automaticamente cuando vuelvas a estar online.</p>
+
+    <button class="btn" id="btnRetry">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="1 4 1 10 7 10"/>
+        <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+      </svg>
+      Reintentar
+    </button>
+
+    <div class="cached-note">
+      O probá <a href="/dashboard/">volver al dashboard</a> — la pagina puede estar cacheada.
+    </div>
+
+    <div class="brand">
+      <img src="logo.svg" alt=""/>Ajax Manager AJM
+    </div>
+  </div>
+
+<script>
+const pill = document.getElementById('statusPill');
+const txt  = document.getElementById('statusText');
+function updateStatus() {
+  if (navigator.onLine) {
+    pill.classList.add('online');
+    txt.textContent = 'Conexion restablecida';
+    setTimeout(() => location.href = '/dashboard/', 600);
+  } else {
+    pill.classList.remove('online');
+    txt.textContent = 'Sin conexion';
+  }
+}
+window.addEventListener('online', updateStatus);
+window.addEventListener('offline', updateStatus);
+document.getElementById('btnRetry').onclick = () => {
+  if (navigator.onLine) { location.href = '/dashboard/'; return; }
+  txt.textContent = 'Sigue sin conexion...';
+  setTimeout(() => txt.textContent = 'Sin conexion', 1500);
+};
+// Auto-retry cada 5s
+setInterval(() => {
+  if (navigator.onLine) updateStatus();
+  else fetch('/dashboard/', { method: 'HEAD', cache: 'no-store' }).then(r => { if (r.ok) location.href = '/dashboard/'; }).catch(() => {});
+}, 5000);
+</script>
+</body>
+</html>

@@ -1,0 +1,70 @@
+# ============================================
+# Stack local de Ajax Manager AJM
+# ============================================
+# Levanta: app + postgres + redis
+# Usa: docker compose up -d
+# Para reset total: docker compose down -v
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ajm-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ajax
+      POSTGRES_PASSWORD: ajax
+      POSTGRES_DB: ajax_manager
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ajax -d ajax_manager"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: ajm-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ajm-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - .env
+    volumes:
+      - ./.env:/app/.env:rw
+      - ./data:/app/data:rw
+    environment:
+      # Sobrescribimos los hosts para que apunten a los contenedores del compose
+      DATABASE_URL: postgresql://ajax:ajax@postgres:5432/ajax_manager?schema=public
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      NODE_ENV: production
+    ports:
+      - "3000:3000"
+    command: ["sh", "-c", "npx prisma migrate deploy && node dist/index.js"]
+
+volumes:
+  postgres_data:
+  redis_data:

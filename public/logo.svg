@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="64" y2="64">
+      <stop offset="0%" stop-color="#e11d2a"/>
+      <stop offset="100%" stop-color="#7c0d18"/>
+    </linearGradient>
+    <linearGradient id="gShine" x1="0" y1="0" x2="0" y2="64">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity=".25"/>
+      <stop offset="50%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <!-- shield -->
+  <path d="M32 4 L58 14 L58 32 C58 46 47 56 32 60 C17 56 6 46 6 32 L6 14 Z" fill="url(#g)"/>
+  <path d="M32 4 L58 14 L58 32 C58 46 47 56 32 60 C17 56 6 46 6 32 L
