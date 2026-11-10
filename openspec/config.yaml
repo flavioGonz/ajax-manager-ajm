@@ -1,0 +1,14 @@
+schema: spec-driven
+
+context: |
+  Proyecto flavioGonz/ajax-manager-ajm.
+
+rules:
+  proposal:
+    - Escribir los artefactos en español (los encabezados de OpenSpec quedan en inglés).
+    - Decir qué queda fuera de alcance.
+    - Indicar qué hay que desplegar/reiniciar y qué páginas verificar.
+  tasks:
+    - La última tarea es siempre de verificación.
+  specs:
+    - Cada requisito usa SHALL o MUST y tiene al menos un escenario.
